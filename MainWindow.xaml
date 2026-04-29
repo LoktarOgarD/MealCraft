@@ -3,13 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:MealCraft.ViewModels"
         Title="MealCraft"
-        Height="680"
+        Height="720"
         Width="1100"
-        MinHeight="600"
-        MinWidth="950"
         WindowStartupLocation="CenterScreen">
 
-    <!-- Das ViewModel wird direkt als DataContext gesetzt. -->
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
@@ -20,22 +17,48 @@
             <ColumnDefinition Width="3*" />
         </Grid.ColumnDefinitions>
 
-        <!-- Linke Seite: Suche, Filter, Statistik und Rezeptliste -->
+        <!-- Linke Seite: Suche, Filter und Rezeptliste -->
         <Border Grid.Column="0"
                 Padding="12"
                 BorderBrush="LightGray"
                 BorderThickness="1"
                 CornerRadius="6">
 
-            <DockPanel LastChildFill="True">
+            <DockPanel>
                 <TextBlock Text="Rezepte"
                            FontSize="24"
                            FontWeight="Bold"
                            DockPanel.Dock="Top"
-                           Margin="0,0,0,12" />
+                           Margin="0,0,0,14" />
 
-                <!-- Such- und Filterbereich -->
-                <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                <!-- Buttons unten -->
+                <StackPanel DockPanel.Dock="Bottom"
+                            Margin="0,12,0,0">
+
+                    <Button Content="Neues Rezept"
+                            Command="{Binding AddRecipeCommand}"
+                            Height="34"
+                            Margin="0,0,0,8" />
+
+                    <Button Content="Rezept löschen"
+                            Command="{Binding DeleteRecipeCommand}"
+                            Height="34"
+                            Margin="0,0,0,8" />
+
+                    <Button Content="Rezepte speichern"
+                            Command="{Binding SaveRecipesCommand}"
+                            Height="34"
+                            Margin="0,0,0,8" />
+
+                    <Button Content="Rezepte laden"
+                            Command="{Binding LoadRecipesCommand}"
+                            Height="34" />
+                </StackPanel>
+
+                <!-- Oberer Bereich: Suche, Filter, Statistik -->
+                <StackPanel DockPanel.Dock="Top"
+                            Margin="0,0,0,12">
+
                     <TextBlock Text="Suche nach Titel" />
                     <TextBox Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              Margin="0,0,0,8" />
@@ -52,107 +75,102 @@
 
                     <Button Content="Filter zurücksetzen"
                             Command="{Binding ClearFiltersCommand}"
-                            Height="32" />
-                </StackPanel>
-
-                <!-- Statistikbereich -->
-                <Border DockPanel.Dock="Top"
-                        Padding="8"
-                        Background="#F5F5F5"
-                        BorderBrush="#DDDDDD"
-                        BorderThickness="1"
-                        Margin="0,0,0,12">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Sichtbar: " FontWeight="Bold" />
-                            <TextBlock Text="{Binding Stats.TotalVisible}" />
-                            <TextBlock Text=" / Gesamt: " FontWeight="Bold" Margin="12,0,0,0" />
-                            <TextBlock Text="{Binding Stats.TotalAll}" />
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                            <TextBlock Text="Kategorie: " FontWeight="Bold" />
-                            <TextBlock Text="{Binding Stats.ActiveCategory}" />
-                            <TextBlock Text=" | Ø Zeit: " FontWeight="Bold" Margin="12,0,0,0" />
-                            <TextBlock Text="{Binding Stats.AvgPrepTime}" />
-                            <TextBlock Text=" Min." />
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <!-- Buttons unten -->
-                <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
-                    <Button Content="Neues Rezept"
-                            Command="{Binding AddRecipeCommand}"
                             Height="34"
-                            Margin="0,0,0,8" />
+                            Margin="0,0,0,12" />
 
-                    <Button Content="Rezept löschen"
-                            Command="{Binding DeleteRecipeCommand}"
-                            Height="34" />
+                    <Border Background="#F5F5F5"
+                            BorderBrush="#DDDDDD"
+                            BorderThickness="1"
+                            Padding="8"
+                            Margin="0,0,0,12">
+
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Sichtbar: "
+                                           FontWeight="Bold" />
+                                <TextBlock Text="{Binding Stats.TotalVisible}" />
+
+                                <TextBlock Text=" / Gesamt: "
+                                           FontWeight="Bold"
+                                           Margin="12,0,0,0" />
+                                <TextBlock Text="{Binding Stats.TotalAll}" />
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,6,0,0">
+                                <TextBlock Text="Kategorie: "
+                                           FontWeight="Bold" />
+                                <TextBlock Text="{Binding Stats.ActiveCategory}" />
+
+                                <TextBlock Text=" | Ø Zeit: "
+                                           FontWeight="Bold"
+                                           Margin="12,0,0,0" />
+                                <TextBlock Text="{Binding Stats.AvgPrepTime}" />
+                                <TextBlock Text=" Min." />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
-                <!-- Gefilterte Rezeptliste -->
+                <!-- Rezeptliste -->
                 <ListBox ItemsSource="{Binding FilteredRecipes}"
                          SelectedItem="{Binding SelectedRecipe, Mode=TwoWay}"
                          DisplayMemberPath="Title" />
             </DockPanel>
         </Border>
 
-        <!-- Rechte Seite: Detailansicht und direkte Bearbeitung -->
+        <!-- Rechte Seite: Rezeptdetails -->
         <Border Grid.Column="1"
+                Margin="16,0,0,0"
                 Padding="12"
                 BorderBrush="LightGray"
                 BorderThickness="1"
-                CornerRadius="6"
-                Margin="16,0,0,0">
+                CornerRadius="6">
 
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                    <TextBlock Text="Rezeptdetails"
-                               FontSize="24"
-                               FontWeight="Bold"
-                               Margin="0,0,0,12" />
+            <StackPanel>
+                <TextBlock Text="Rezeptdetails"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Margin="0,0,0,14" />
 
-                    <TextBlock Text="Titel" />
-                    <TextBox Text="{Binding SelectedRecipe.Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,0,0,10" />
+                <TextBlock Text="Titel" />
+                <TextBox Text="{Binding SelectedRecipe.Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,0,10" />
 
-                    <TextBlock Text="Kategorie" />
-                    <ComboBox ItemsSource="{Binding Categories}"
-                              SelectedItem="{Binding SelectedRecipe.Category, Mode=TwoWay}"
-                              Margin="0,0,0,10" />
+                <TextBlock Text="Kategorie" />
+                <ComboBox ItemsSource="{Binding Categories}"
+                          SelectedItem="{Binding SelectedRecipe.Category, Mode=TwoWay}"
+                          Margin="0,0,0,10" />
 
-                    <TextBlock Text="Schwierigkeit" />
-                    <ComboBox ItemsSource="{Binding Difficulties}"
-                              SelectedItem="{Binding SelectedRecipe.Difficulty, Mode=TwoWay}"
-                              Margin="0,0,0,10" />
+                <TextBlock Text="Schwierigkeit" />
+                <ComboBox ItemsSource="{Binding Difficulties}"
+                          SelectedItem="{Binding SelectedRecipe.Difficulty, Mode=TwoWay}"
+                          Margin="0,0,0,10" />
 
-                    <TextBlock Text="Zubereitungszeit in Minuten" />
-                    <TextBox Text="{Binding SelectedRecipe.PreparationTimeMinutes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,0,0,10" />
+                <TextBlock Text="Zubereitungszeit in Minuten" />
+                <TextBox Text="{Binding SelectedRecipe.PreparationTimeMinutes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,0,10" />
 
-                    <TextBlock Text="Zutaten" />
-                    <TextBox Text="{Binding SelectedRecipe.Ingredients, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             AcceptsReturn="True"
-                             Height="100"
-                             TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto"
-                             Margin="0,0,0,10" />
+                <TextBlock Text="Zutaten" />
+                <TextBox Text="{Binding SelectedRecipe.Ingredients, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True"
+                         Height="110"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         Margin="0,0,0,10" />
 
-                    <TextBlock Text="Zubereitungsschritte" />
-                    <TextBox Text="{Binding SelectedRecipe.Steps, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             AcceptsReturn="True"
-                             Height="130"
-                             TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto"
-                             Margin="0,0,0,12" />
+                <TextBlock Text="Zubereitungsschritte" />
+                <TextBox Text="{Binding SelectedRecipe.Steps, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True"
+                         Height="150"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         Margin="0,0,0,12" />
 
-                    <Button Content="Eingaben prüfen"
-                            Command="{Binding ValidateSelectedRecipeCommand}"
-                            Height="34" />
-                </StackPanel>
-            </ScrollViewer>
+                <Button Content="Eingaben prüfen"
+                        Command="{Binding ValidateSelectedRecipeCommand}"
+                        Height="36" />
+            </StackPanel>
         </Border>
     </Grid>
 </Window>

@@ -13,50 +13,30 @@ namespace MealCraft.ViewModels
 {
     /// <summary>
     /// Haupt-ViewModel der Anwendung.
-    /// Enthält die Rezeptliste, Suche, Filter, Statistik und einfache CRUD-Funktionen.
-    /// Ziel: eine stabile, verständliche Arbeitsversion für Day 3 und Day 4.
+    /// Enthält Rezeptliste, Suche, Filter, Statistik, CRUD und JSON-Speichern/Laden.
     /// </summary>
     public partial class MainViewModel : ObservableObject
     {
-        // Konstanten für die Filter-ComboBoxen.
         public const string AllCategories = "Alle Kategorien";
         public const string AllDifficulties = "Alle Schwierigkeiten";
 
-        // Interne Hauptliste. Diese Liste enthält wirklich alle Rezepte.
-        private readonly ObservableCollection<Recipe> _allRecipes = new();
+        private const string StorageFilePath = "recipes.json";
 
-        // Gefilterte Sicht auf die Hauptliste. Die ListBox bindet an diese View.
+        private readonly ObservableCollection<Recipe> _allRecipes = new();
         private readonly ICollectionView _view;
 
-        /// <summary>
-        /// Kategorien für den Kategorie-Filter links.
-        /// </summary>
         public string[] CategoryFilters { get; }
-
-        /// <summary>
-        /// Schwierigkeitsgrade für den Schwierigkeits-Filter links.
-        /// </summary>
         public string[] DifficultyFilters { get; }
 
-        /// <summary>
-        /// Kategorien für das Bearbeitungsfeld rechts.
-        /// </summary>
         public RecipeCategory[] Categories { get; } = Enum.GetValues<RecipeCategory>();
-
-        /// <summary>
-        /// Schwierigkeitsgrade für das Bearbeitungsfeld rechts.
-        /// </summary>
         public Difficulty[] Difficulties { get; } = Enum.GetValues<Difficulty>();
 
-        /// <summary>
-        /// Gefilterte Rezeptliste für die Anzeige in der ListBox.
-        /// </summary>
         public ICollectionView FilteredRecipes => _view;
 
         private string _searchText = string.Empty;
 
-        /// Suchtext für die Titelsuche.
-        /// Jede Änderung aktualisiert sofort die Liste.
+        /// <summary>
+        /// Suchtext für die Rezeptsuche.
         /// </summary>
         public string SearchText
         {
@@ -106,21 +86,17 @@ namespace MealCraft.ViewModels
 
         /// <summary>
         /// Aktuell ausgewähltes Rezept.
-        /// Die Detailfelder rechts binden an dieses Objekt.
+        /// Die Detailansicht bindet an dieses Objekt.
         /// </summary>
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(DeleteRecipeCommand))]
         [NotifyPropertyChangedFor(nameof(HasSelectedRecipe))]
         private Recipe? selectedRecipe;
 
-        /// <summary>
-        /// True, wenn ein Rezept ausgewählt ist.
-        /// Kann später für Sichtbarkeit oder Aktivierung verwendet werden.
-        /// </summary>
         public bool HasSelectedRecipe => SelectedRecipe is not null;
 
         /// <summary>
-        /// Statistik für die kleine Übersicht im UI.
+        /// Statistik für die Anzeige im UI.
         /// </summary>
         public RecipeStats Stats
         {
@@ -141,7 +117,6 @@ namespace MealCraft.ViewModels
 
         public MainViewModel()
         {
-            // Filterlisten vorbereiten.
             CategoryFilters = new[] { AllCategories }
                 .Concat(Enum.GetValues<RecipeCategory>().Select(category => category.ToString()))
                 .ToArray();
@@ -150,12 +125,40 @@ namespace MealCraft.ViewModels
                 .Concat(Enum.GetValues<Difficulty>().Select(difficulty => difficulty.ToString()))
                 .ToArray();
 
-            // CollectionView einrichten.
             _view = CollectionViewSource.GetDefaultView(_allRecipes);
             _view.Filter = ApplyFilter;
-            _view.CollectionChanged += (_, _) => OnPropertyChanged(nameof(Stats));
+
+            _allRecipes.CollectionChanged += (_, e) =>
+            {
+                if (e.NewItems is not null)
+                {
+                    foreach (Recipe recipe in e.NewItems)
+                    {
+                        recipe.PropertyChanged += Recipe_PropertyChanged;
+                    }
+                }
+
+                if (e.OldItems is not null)
+                {
+                    foreach (Recipe recipe in e.OldItems)
+                    {
+                        recipe.PropertyChanged -= Recipe_PropertyChanged;
+                    }
+                }
+
+                RefreshView();
+            };
 
             LoadSampleRecipes();
+        }
+
+        /// <summary>
+        /// Reagiert auf Änderungen eines Rezepts.
+        /// Dadurch werden Filter und Statistik sofort aktualisiert.
+        /// </summary>
+        private void Recipe_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            RefreshView();
         }
 
         /// <summary>
@@ -180,7 +183,6 @@ namespace MealCraft.ViewModels
 
         /// <summary>
         /// Fügt ein neues Rezept hinzu und wählt es direkt aus.
-        /// Danach werden die Filter zurückgesetzt, damit das neue Rezept sichtbar bleibt.
         /// </summary>
         [RelayCommand]
         private void AddRecipe()
@@ -209,7 +211,7 @@ namespace MealCraft.ViewModels
         }
 
         /// <summary>
-        /// Löscht das ausgewählte Rezept nach einer Sicherheitsabfrage.
+        /// Löscht das ausgewählte Rezept.
         /// </summary>
         [RelayCommand(CanExecute = nameof(CanDeleteRecipe))]
         private void DeleteRecipe()
@@ -239,13 +241,10 @@ namespace MealCraft.ViewModels
             }
         }
 
-        /// <summary>
-        /// Rezept kann nur gelöscht werden, wenn wirklich ein Rezept ausgewählt ist.
-        /// </summary>
         private bool CanDeleteRecipe() => SelectedRecipe is not null;
 
         /// <summary>
-        /// Setzt Suchtext und Filter zurück.
+        /// Setzt Suche und Filter zurück.
         /// </summary>
         [RelayCommand]
         private void ClearFilters()
@@ -256,8 +255,7 @@ namespace MealCraft.ViewModels
         }
 
         /// <summary>
-        /// Prüft die Eingaben des ausgewählten Rezepts.
-        /// Fehler werden als MessageBox angezeigt, damit es für das Schulprojekt einfach bleibt.
+        /// Prüft das ausgewählte Rezept auf einfache Eingabefehler.
         /// </summary>
         [RelayCommand]
         private void ValidateSelectedRecipe()
@@ -299,8 +297,63 @@ namespace MealCraft.ViewModels
         }
 
         /// <summary>
+        /// Speichert alle Rezepte in einer JSON-Datei.
+        /// </summary>
+        [RelayCommand]
+        private void SaveRecipes()
+        {
+            try
+            {
+                RecipeStorageService.Save(StorageFilePath, _allRecipes);
+
+                MessageBox.Show(
+                    "Rezepte wurden erfolgreich gespeichert.",
+                    "Speichern",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Die Rezepte konnten nicht gespeichert werden.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Lädt Rezepte aus einer JSON-Datei.
+        /// Die bestehende Liste wird ersetzt.
+        /// </summary>
+        [RelayCommand]
+        private void LoadRecipes()
+        {
+            try
+            {
+                var loadedRecipes = RecipeStorageService.Load(StorageFilePath);
+
+                _allRecipes.Clear();
+
+                foreach (var recipe in loadedRecipes)
+                {
+                    _allRecipes.Add(recipe);
+                }
+
+                ClearFilters();
+                RefreshView();
+                SelectedRecipe = _view.Cast<Recipe>().FirstOrDefault();
+
+                MessageBox.Show(
+                    "Rezepte wurden erfolgreich geladen.",
+                    "Laden",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Die Rezepte konnten nicht geladen werden.", ex);
+            }
+        }
+
+        /// <summary>
         /// Lädt Beispielrezepte für den ersten Start.
-        /// Dadurch ist die Oberfläche sofort testbar.
         /// </summary>
         private void LoadSampleRecipes()
         {
@@ -359,7 +412,7 @@ namespace MealCraft.ViewModels
         }
 
         /// <summary>
-        /// Aktualisiert die gefilterte Liste und die Statistik.
+        /// Aktualisiert gefilterte Liste und Statistik.
         /// </summary>
         private void RefreshView()
         {
@@ -381,7 +434,7 @@ namespace MealCraft.ViewModels
     }
 
     /// <summary>
-    /// Kleines Datenobjekt für die Statistik im UI.
+    /// Datenobjekt für die Statistik.
     /// </summary>
     public record RecipeStats(
         int TotalVisible,

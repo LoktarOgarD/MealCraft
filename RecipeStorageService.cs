@@ -8,7 +8,6 @@ namespace MealCraft.Services
 {
     /// <summary>
     /// Speichert und lädt Rezepte als JSON-Datei.
-    /// Diese Klasse enthält keine UI-Logik und kann später leicht erweitert werden.
     /// </summary>
     public static class RecipeStorageService
     {
@@ -17,9 +16,6 @@ namespace MealCraft.Services
             WriteIndented = true
         };
 
-        /// <summary>
-        /// Speichert alle Rezepte in einer JSON-Datei.
-        /// </summary>
         public static void Save(string filePath, IEnumerable<Recipe> recipes)
         {
             if (string.IsNullOrWhiteSpace(filePath))
@@ -29,10 +25,6 @@ namespace MealCraft.Services
             File.WriteAllText(filePath, json);
         }
 
-        /// <summary>
-        /// Lädt Rezepte aus einer JSON-Datei.
-        /// Falls die Datei leer ist, wird eine leere Liste zurückgegeben.
-        /// </summary>
         public static List<Recipe> Load(string filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath))
