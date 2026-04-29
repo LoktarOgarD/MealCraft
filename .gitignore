@@ -1,0 +1,24 @@
+# Visual Studio cache/options directory
+.vs/
+
+# Build results
+bin/
+obj/
+
+# Visual Studio Code
+.vscode/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build folders
+Debug/
+Release/
+
+# NuGet
+*.nupkg
+*.snupkg
